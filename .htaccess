@@ -1,0 +1,8 @@
+RewriteEngine on
+RewriteBase /
+
+RewriteCond %{REQUEST_URI} !^/sso.php
+RewriteCond %{REQUEST_URI} !^/sso/
+RewriteRule ^(.*)$ http://your.rp.url.tld/$1 [L,P]
+
+RewriteRule ^sso/(.*)/?$ sso.php?challenge=$1
