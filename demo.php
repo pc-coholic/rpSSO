@@ -3,7 +3,12 @@ require_once('rpSSO.class.php');
 
 $rpsso = new rpSSO('secretkey', 'http://your.rp.url.tld/');
 
-$rpSSO->auth('admin-123456', 'PASSWORD');
+if ($rpSSO->auth('admin-123456', 'PASSWORD')) {
+	echo("Login successfull");
+} else {
+	echo("Login failed");
+}
+echo '<br><br>';
 echo $rpSSO->bid();
 echo '<br><br>';
 echo $rpSSO->sid();
@@ -12,6 +17,6 @@ echo $rpSSO->create_challenge();
 echo '<br><br>';
 echo $rpSSO->get_sso();
 echo '<br><br>';
-echo $rpSSO->do_sso($rpSSO->create_challenge());
+#echo $rpSSO->do_sso($rpSSO->create_challenge());
 echo '<br><br>';
 ?>
