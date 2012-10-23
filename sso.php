@@ -1,7 +1,7 @@
 <?php
 require_once('rpSSO.class.php');
 
-$rpsso = new rpSSO('secretkey', 'http://your.rp.url.tld/');
+$rpSSO = new rpSSO('secretkey', 'http://your.rp.url.tld/');
 
 if (empty($_GET['challenge'])) {
 	die('No challenge specified');
