@@ -1,7 +1,7 @@
 <?php
 require_once('rpSSO.class.php');
 
-$rpsso = new rpSSO('secretkey', 'http://your.rp.url.tld/');
+$rpSSO = new rpSSO('secretkey', 'http://your.rp.url.tld/');
 
 if ($rpSSO->auth('admin-123456', 'PASSWORD')) {
 	echo("Login successfull");
