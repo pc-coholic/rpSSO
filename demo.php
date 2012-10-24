@@ -13,7 +13,7 @@ echo $rpSSO->bid();
 echo '<br><br>';
 echo $rpSSO->sid();
 echo '<br><br>';
-echo $rpSSO->create_challenge();
+print_r($rpSSO->create_challenge());
 echo '<br><br>';
 echo $rpSSO->get_sso();
 echo '<br><br>';

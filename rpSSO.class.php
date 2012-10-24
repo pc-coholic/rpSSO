@@ -205,20 +205,22 @@ class rpSSO {
 	 */
 	public function create_challenge($validity = '30') {
 		// construct the challenge-token
-		$challenge = array(
+		$challenge['key'] = array(
 				'bid'   => $this->rpBid,
 				'sid'   => $this->rpSid,
 		   		'valid' => time() + $validity);
 		
 		// convert token into importable plaintext
-		$challenge = serialize($challenge);
+		$challenge['key'] = serialize($challenge['key']);
 		
 		// add rpSSO-tag
-		$challenge .= 'rpSSO';
+		$challenge['key'] .= 'rpSSO';
 		
 		// encode that stuff
-		$challenge = $this->crypt->encode($challenge);
+		$challenge['key'] = $this->crypt->encode($challenge['key']);
 
+		// create a HMAC-signature
+		$challenge['hmac'] = $this->crypt->hmac($challenge['key']);
 		return $challenge;
 	}
 
@@ -239,11 +241,17 @@ class rpSSO {
 	 * or just false.
 	 *
 	 * @param mixed $challenge 
+	 * @param mixed $hmac 
 	 * @param mixed $ignoretime 
 	 * @access public
 	 * @return false | array
 	 */
-	public function check_challenge($challenge, $ignoretime = false) {
+	public function check_challenge($challenge, $hmac, $ignoretime = false) {
+		// Check hmac
+		if ($hmac != $this->crypt->hmac($challenge)) {
+			return false;
+		}
+
 		$challenge = $this->crypt->decode($challenge);
 		
 		// check for rpSSO-tag
@@ -274,7 +282,8 @@ class rpSSO {
 	 * @return string
 	 */
 	public function get_sso($validity = '30') {
-		return $this->rpUrl . 'sso/' . $this->create_challenge($validity);
+		$challenge = $this->create_challenge($validity);
+		return $this->rpUrl . 'sso/' . $challenge['key'] . '/' . $challenge['hmac']; 
 	}
 
 	/**
@@ -417,6 +426,25 @@ class rpSSO_Encryption {
 		$decrypttext = mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $this->skey, $crypttext, MCRYPT_MODE_ECB, $iv);
 
 		return trim($decrypttext);
+	}
+
+	/**
+	 * hmac  
+	 *
+	 * Generate a keyed hash value using the HMAC-method
+	 *
+	 * @param mixed $value 
+	 * @access public
+	 * @return false | string
+	 */
+	public function hmac($value) {
+		if (!$value) {
+			return false;
+		}
+
+		$hmac = hash_hmac('sha256', $value, $this->skey);
+
+		return $hmac;
 	}
 }
 ?>
