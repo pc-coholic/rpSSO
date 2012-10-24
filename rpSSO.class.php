@@ -211,7 +211,7 @@ class rpSSO {
 		   		'valid' => time() + $validity);
 		
 		// convert token into importable plaintext
-		$challenge = var_export($challenge, true);
+		$challenge = serialize($challenge);
 		
 		// add rpSSO-tag
 		$challenge .= 'rpSSO';
@@ -249,7 +249,7 @@ class rpSSO {
 		// check for rpSSO-tag
 		if (substr($challenge, -5) == 'rpSSO') {
 			// convert array-string back to array
-			eval('$challenge = ' . substr($challenge, 0, -5) . ';');
+			$challenge = unserialize(substr($challenge, 0, -5));
 			
 			// check if challenge still valid by time
 			if ( ($ignoretime == false) && (time() > $challenge['valid']) ) {
