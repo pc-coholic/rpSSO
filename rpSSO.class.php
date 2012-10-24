@@ -216,11 +216,14 @@ class rpSSO {
 		// add rpSSO-tag
 		$challenge['key'] .= 'rpSSO';
 		
-		// encode that stuff
-		$challenge['key'] = $this->crypt->encode($challenge['key']);
+		// encode that stuff and get the encrypted data and IV
+		$crypted = $this->crypt->encode($challenge['key']);
+		$challenge['key'] = $crypted['data'];
+		$challenge['iv'] = $crypted['iv'];
 
 		// create a HMAC-signature
 		$challenge['hmac'] = $this->crypt->hmac($challenge['key']);
+
 		return $challenge;
 	}
 
@@ -242,18 +245,19 @@ class rpSSO {
 	 *
 	 * @param mixed $challenge 
 	 * @param mixed $hmac 
+	 * @param mixed $iv 
 	 * @param mixed $ignoretime 
 	 * @access public
 	 * @return false | array
 	 */
-	public function check_challenge($challenge, $hmac, $ignoretime = false) {
+	public function check_challenge($challenge, $hmac, $iv, $ignoretime = false) {
 		// Check hmac
 		if ($hmac != $this->crypt->hmac($challenge)) {
 			return false;
 		}
 
-		$challenge = $this->crypt->decode($challenge);
-		
+		$challenge = $this->crypt->decode($challenge, $iv);
+
 		// check for rpSSO-tag
 		if (substr($challenge, -5) == 'rpSSO') {
 			// convert array-string back to array
@@ -283,7 +287,7 @@ class rpSSO {
 	 */
 	public function get_sso($validity = '30') {
 		$challenge = $this->create_challenge($validity);
-		return $this->rpUrl . 'sso/' . $challenge['key'] . '/' . $challenge['hmac']; 
+		return $this->rpUrl . 'sso/' . $challenge['key'] . '/' . $challenge['hmac'] . '/' . $challenge['iv']; 
 	}
 
 	/**
@@ -399,11 +403,13 @@ class rpSSO_Encryption {
 		}
 
 		$text = $value;
-		$iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
+		$iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_CBC);
 		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-		$crypttext = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $this->skey, $text, MCRYPT_MODE_ECB, $iv);
-
-		return trim($this->safe_b64encode($crypttext)); 
+		$crypttext = mcrypt_encrypt(MCRYPT_RIJNDAEL_256, $this->skey, $text, MCRYPT_MODE_CBC, $iv);
+		
+		$return['data'] = trim($this->safe_b64encode($crypttext));
+		$return['iv'] = trim($this->safe_b64encode($iv));
+		return $return; 
 	}
 
 	/**
@@ -412,18 +418,18 @@ class rpSSO_Encryption {
 	 * Decode encrypted data and remove URL-safe-stuff if needed.
 	 *
 	 * @param mixed $value 
+	 * @param mixed $iv 
 	 * @access public
 	 * @return false | string
 	 */
-	public function decode($value){
+	public function decode($value, $iv){
 		if (!$value) {
 			return false;
 		}
 
 		$crypttext = $this->safe_b64decode($value); 
-		$iv_size = mcrypt_get_iv_size(MCRYPT_RIJNDAEL_256, MCRYPT_MODE_ECB);
-		$iv = mcrypt_create_iv($iv_size, MCRYPT_RAND);
-		$decrypttext = mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $this->skey, $crypttext, MCRYPT_MODE_ECB, $iv);
+		$iv = $this->safe_b64decode($iv);
+		$decrypttext = mcrypt_decrypt(MCRYPT_RIJNDAEL_256, $this->skey, $crypttext, MCRYPT_MODE_CBC, $iv);
 
 		return trim($decrypttext);
 	}
